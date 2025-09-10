@@ -1,0 +1,36 @@
+# Helm values stub for demo-node-app
+# Prefilled with known values. Replace TODOs when infra is provisioned.
+
+image:
+  repository: '139294524816.dkr.ecr.ap-southeast-2.amazonaws.com/demo-node-app' # known
+  tag: 'staging' # known
+  pullPolicy: IfNotPresent # known
+
+service:
+  type: ClusterIP
+  port: 3000 # known
+
+ingress:
+  enabled: true
+  className: alb
+  host: demo-node-app-eks.aws.deanlofts.xyz # known
+
+env:
+  APP_ENV: staging # known default
+  LOG_LEVEL: info # known default
+  PORT: '3000' # known default
+  S3_BUCKET: devops-refresher-staging-app # proposed; create if missing
+  DB_HOST: '' # TODO: set from RDS endpoint
+  DB_PORT: '5432' # known default
+  DB_USER: '' # TODO: set from RDS
+  DB_NAME: '' # TODO: set from RDS
+  DB_SSL: required # known default
+  REDIS_HOST: '' # TODO: set from ElastiCache
+  REDIS_PORT: '6379' # known default
+  SELF_TEST_ON_BOOT: 'false' # disable on boot in clusters
+
+secrets:
+  DB_PASS: '' # TODO: set from RDS secret
+  REDIS_PASS: '' # TODO: set if ElastiCache auth enabled
+
+resources: {}

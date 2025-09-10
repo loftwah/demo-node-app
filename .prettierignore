@@ -1,0 +1,10 @@
+node_modules
+dist
+coverage
+.git
+*.log
+logs
+Dockerfile
+buildspec.yml
+deploy/eks/chart/templates/*.yaml
+

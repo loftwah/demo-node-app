@@ -1,0 +1,33 @@
+image:
+  repository: '139294524816.dkr.ecr.ap-southeast-2.amazonaws.com/demo-node-app'
+  tag: 'staging'
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 3000
+
+ingress:
+  enabled: true
+  className: alb
+  host: demo-node-app-eks.aws.deanlofts.xyz
+
+env:
+  APP_ENV: staging
+  LOG_LEVEL: info
+  PORT: '3000'
+  S3_BUCKET: ''
+  DB_HOST: ''
+  DB_PORT: '5432'
+  DB_USER: ''
+  DB_NAME: ''
+  DB_SSL: required
+  REDIS_HOST: ''
+  REDIS_PORT: '6379'
+  SELF_TEST_ON_BOOT: 'false'
+
+secrets:
+  DB_PASS: ''
+  REDIS_PASS: ''
+
+resources: {}

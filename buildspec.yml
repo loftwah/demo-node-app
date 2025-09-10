@@ -1,0 +1,40 @@
+version: 0.2
+
+env:
+  variables:
+    IMAGE_REPO_NAME: "demo-node-app"
+    APP_ENV: "staging"
+  parameter-store:
+    AWS_ACCOUNT_ID: "/account/id"
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - npm ci --no-audit --no-fund
+  pre_build:
+    commands:
+      - npm run build
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - ACCOUNT_ID=${AWS_ACCOUNT_ID:-$(aws sts get-caller-identity --query Account --output text)}
+      - REGION=${AWS_REGION:-${AWS_DEFAULT_REGION:-ap-southeast-2}}
+      - REPO_URI=${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${IMAGE_REPO_NAME}
+      - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com
+      - GIT_SHA=$(echo ${CODEBUILD_RESOLVED_SOURCE_VERSION} | cut -c1-7)
+  build:
+    commands:
+      - echo Build started on `date`
+      - docker build -t ${REPO_URI}:staging -t ${REPO_URI}:${GIT_SHA} .
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - docker push ${REPO_URI}:staging
+      - docker push ${REPO_URI}:${GIT_SHA}
+      - printf '[{"name":"app","imageUri":"%s"}]' ${REPO_URI}:${GIT_SHA} > imagedefinitions.json
+artifacts:
+  files:
+    - imagedefinitions.json
+
+

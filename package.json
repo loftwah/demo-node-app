@@ -1,0 +1,32 @@
+{
+  "name": "demo-node-app",
+  "version": "0.1.0",
+  "description": "Loftwah's fun CRUD monkey demo app (Node 20 + TypeScript) for ECS/EKS",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "lint": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.678.0",
+    "express": "^4.19.2",
+    "ioredis": "^5.4.1",
+    "pg": "^8.12.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.12.12",
+    "@types/pg": "^8.11.6",
+    "@types/uuid": "^9.0.7",
+    "prettier": "^3.3.3",
+    "typescript": "^5.5.4"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-node-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: demo-node-app
+  template:
+    metadata:
+      labels:
+        app: demo-node-app
+    spec:
+      containers:
+        - name: app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 3000
+          env:
+            - name: APP_ENV
+              value: "{{ .Values.env.APP_ENV }}"
+            - name: LOG_LEVEL
+              value: "{{ .Values.env.LOG_LEVEL }}"
+            - name: PORT
+              value: "{{ .Values.env.PORT }}"
+            - name: S3_BUCKET
+              value: "{{ .Values.env.S3_BUCKET }}"
+            - name: DB_HOST
+              value: "{{ .Values.env.DB_HOST }}"
+            - name: DB_PORT
+              value: "{{ .Values.env.DB_PORT }}"
+            - name: DB_USER
+              value: "{{ .Values.env.DB_USER }}"
+            - name: DB_NAME
+              value: "{{ .Values.env.DB_NAME }}"
+            - name: DB_SSL
+              value: "{{ .Values.env.DB_SSL }}"
+            - name: REDIS_HOST
+              value: "{{ .Values.env.REDIS_HOST }}"
+            - name: REDIS_PORT
+              value: "{{ .Values.env.REDIS_PORT }}"
+            - name: SELF_TEST_ON_BOOT
+              value: "{{ .Values.env.SELF_TEST_ON_BOOT }}"
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: demo-node-app-secrets
+                  key: DB_PASS
+            - name: REDIS_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: demo-node-app-secrets
+                  key: REDIS_PASS
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+

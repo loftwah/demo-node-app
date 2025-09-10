@@ -1,0 +1,7 @@
+~/g/devops-refresher/a/03-ecr main ❯ terraform output                      AWS devops-sandbox us-east-1
+pull_through_cache_uri_hint = ""
+repository_arn = "arn:aws:ecr:ap-southeast-2:139294524816:repository/demo-node-app"
+repository_name = "demo-node-app"
+repository_url = "139294524816.dkr.ecr.ap-southeast-2.amazonaws.com/demo-node-app"
+
+github: loftwah/demo-node-app
