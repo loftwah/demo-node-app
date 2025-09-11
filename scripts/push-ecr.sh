@@ -10,6 +10,7 @@ AWS_REGION="ap-southeast-2"
 IMAGE_NAME="demo-node-app"
 # Default tag to git SHA if available, otherwise 'latest'; allow override via env
 IMAGE_TAG="${IMAGE_TAG:-$(git rev-parse --short HEAD 2>/dev/null || echo latest)}"
+ENV_TAG="${ENV_TAG:-staging}"
 
 # Resolve account id
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text --profile "$AWS_PROFILE")
@@ -22,6 +23,7 @@ echo "Using AWS region:  $AWS_REGION"
 echo "AWS account id:   $AWS_ACCOUNT_ID"
 echo "Repository URI:   $REPOSITORY_URI"
 echo "Image tag:        $IMAGE_TAG"
+echo "Env tag:          $ENV_TAG"
 
 # Ensure repository exists (idempotent)
 aws ecr describe-repositories \
@@ -41,14 +43,17 @@ aws ecr get-login-password --region "$AWS_REGION" --profile "$AWS_PROFILE" | \
   docker login --username AWS --password-stdin "$ECR_URI"
 
 echo "Building image..."
-docker build -t "$IMAGE_NAME:$IMAGE_TAG" .
+docker build -t "$IMAGE_NAME:$IMAGE_TAG" -t "$IMAGE_NAME:$ENV_TAG" .
 
 echo "Tagging image..."
 docker tag "$IMAGE_NAME:$IMAGE_TAG" "$REPOSITORY_URI:$IMAGE_TAG"
+docker tag "$IMAGE_NAME:$ENV_TAG" "$REPOSITORY_URI:$ENV_TAG"
 
 echo "Pushing image to ECR..."
 docker push "$REPOSITORY_URI:$IMAGE_TAG"
+docker push "$REPOSITORY_URI:$ENV_TAG"
 
 echo "Pushed: $REPOSITORY_URI:$IMAGE_TAG"
+echo "Pushed: $REPOSITORY_URI:$ENV_TAG"
 
 

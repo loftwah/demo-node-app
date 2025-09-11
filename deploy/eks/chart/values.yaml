@@ -16,13 +16,13 @@ env:
   APP_ENV: staging
   LOG_LEVEL: info
   PORT: '3000'
-  S3_BUCKET: ''
-  DB_HOST: ''
+  S3_BUCKET: devops-refresher-staging-app-65d854
+  DB_HOST: staging-app-postgres.c4msfqd2cnyb.ap-southeast-2.rds.amazonaws.com
   DB_PORT: '5432'
-  DB_USER: ''
-  DB_NAME: ''
+  DB_USER: app_user_staging
+  DB_NAME: app_staging
   DB_SSL: required
-  REDIS_HOST: ''
+  REDIS_HOST: master.staging-app-redis.hskbd9.apse2.cache.amazonaws.com
   REDIS_PORT: '6379'
   SELF_TEST_ON_BOOT: 'false'
 
