@@ -31,3 +31,22 @@ secrets:
   REDIS_PASS: ''
 
 resources: {}
+
+# Optional: pull env directly from AWS SSM/Secrets Manager via External Secrets Operator
+externalSecrets:
+  enabled: false
+  # The Kubernetes Secret name to populate with all env vars
+  targetSecretName: demo-node-app-env
+  # Reference to an External Secrets store (assumes IRSA with ssm/secrets perms)
+  storeRef:
+    kind: ClusterSecretStore
+    name: aws-parameterstore
+  # Pull a whole SSM path (key prefix) into the Secret
+  dataFrom:
+    - extract:
+        key: /devops-refresher/staging/app
+  # Optionally add individual secrets (e.g., from Secrets Manager)
+  # data:
+  #   - secretKey: DB_PASS
+  #     remoteRef:
+  #       key: /devops-refresher/staging/app/DB_PASS

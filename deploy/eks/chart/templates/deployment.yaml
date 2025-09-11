@@ -18,6 +18,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: 3000
+          {{- if not .Values.externalSecrets.enabled }}
           env:
             - name: APP_ENV
               value: "{{ .Values.env.APP_ENV }}"
@@ -53,6 +54,11 @@ spec:
                 secretKeyRef:
                   name: demo-node-app-secrets
                   key: REDIS_PASS
+          {{- else }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.externalSecrets.targetSecretName }}
+          {{- end }}
           livenessProbe:
             httpGet:
               path: /healthz
@@ -65,5 +71,4 @@ spec:
               port: 3000
             initialDelaySeconds: 5
             periodSeconds: 5
-
 
