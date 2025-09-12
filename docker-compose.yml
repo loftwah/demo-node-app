@@ -22,6 +22,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASS=
+      - REDIS_TLS=false
       - SEED_DB=true
     ports:
       - '3000:3000'

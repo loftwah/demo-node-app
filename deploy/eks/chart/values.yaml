@@ -24,6 +24,8 @@ env:
   DB_SSL: required
   REDIS_HOST: master.staging-app-redis.hskbd9.apse2.cache.amazonaws.com
   REDIS_PORT: '6379'
+  REDIS_TLS: 'true'
+  REDIS_USERNAME: ''
   SELF_TEST_ON_BOOT: 'false'
 
 secrets:

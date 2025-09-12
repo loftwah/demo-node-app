@@ -42,6 +42,10 @@ spec:
               value: "{{ .Values.env.REDIS_HOST }}"
             - name: REDIS_PORT
               value: "{{ .Values.env.REDIS_PORT }}"
+            - name: REDIS_TLS
+              value: "{{ .Values.env.REDIS_TLS }}"
+            - name: REDIS_USERNAME
+              value: "{{ .Values.env.REDIS_USERNAME }}"
             - name: SELF_TEST_ON_BOOT
               value: "{{ .Values.env.SELF_TEST_ON_BOOT }}"
             - name: DB_PASS

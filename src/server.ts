@@ -13,6 +13,7 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 const S3_BUCKET = process.env.S3_BUCKET || '';
 const SELF_TEST_ON_BOOT = (process.env.SELF_TEST_ON_BOOT || 'true').toLowerCase() === 'true';
 const APP_AUTH_SECRET = process.env.APP_AUTH_SECRET || 'hunter2';
+const READYZ_PUBLIC = (process.env.READYZ_PUBLIC || 'false').toLowerCase() === 'true';
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 const CURRENT_LOG_LEVEL = LOG_LEVEL.toLowerCase() as LogLevel;
@@ -35,6 +36,9 @@ function logError(...args: any[]) {
 
 function isPublicPath(req: Request): boolean {
   if (req.path === '/healthz') return true;
+  if (req.path === '/robots.txt') return true;
+  if (req.path === '/favicon.ico') return true;
+  if (READYZ_PUBLIC && req.path === '/readyz') return true;
   if (req.method === 'GET' && req.path === '/') return true;
   return false;
 }
@@ -90,6 +94,21 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 // Root overview page
 app.get('/', (_req: Request, res: Response) => {
+  const publicEndpoints = [
+    '- GET  /           this overview',
+    '- GET  /healthz    liveness (200 when the process is up)',
+    '- GET  /robots.txt, /favicon.ico',
+  ];
+  const protectedEndpoints = [
+    '- GET  /selftest   end-to-end CRUD across services',
+    '- POST/GET/DELETE /s3/:id',
+    '- POST/GET        /db/items',
+    '- GET/PUT/DELETE  /db/items/:id',
+    '- POST/GET/PUT/DELETE /cache/:key',
+  ];
+  if (READYZ_PUBLIC) publicEndpoints.push('- GET  /readyz     readiness (checks S3/DB/Redis)');
+  else protectedEndpoints.unshift('- GET  /readyz     readiness (checks S3/DB/Redis)');
+
   const overview = [
     "Loftwah's DevOps Refresher — Demo Node App",
     '',
@@ -104,16 +123,10 @@ app.get('/', (_req: Request, res: Response) => {
     '- ElastiCache Redis for cache/kv',
     '',
     'Public endpoints (no auth required):',
-    '- GET  /           this overview',
-    '- GET  /healthz    liveness (200 when the process is up)',
+    ...publicEndpoints,
     '',
     'Protected endpoints (auth required):',
-    '- GET  /readyz     readiness (checks S3/DB/Redis)',
-    '- GET  /selftest   end-to-end CRUD across services',
-    '- POST/GET/DELETE /s3/:id',
-    '- POST/GET        /db/items',
-    '- GET/PUT/DELETE  /db/items/:id',
-    '- POST/GET/PUT/DELETE /cache/:key',
+    ...protectedEndpoints,
     '',
     'How to authenticate:',
     '- Send Authorization: Bearer <APP_AUTH_SECRET>',
@@ -132,6 +145,14 @@ app.get('/', (_req: Request, res: Response) => {
 app.get('/healthz', (_req: Request, res: Response) => {
   logDebug('[healthz] liveness check OK');
   res.status(200).type('text/plain').send('ok');
+});
+
+// Quiet common anonymous hits
+app.get('/robots.txt', (_req: Request, res: Response) => {
+  res.type('text/plain').send('User-agent: *\nDisallow:');
+});
+app.get('/favicon.ico', (_req: Request, res: Response) => {
+  res.status(204).end();
 });
 
 // Deeper readiness diagnostics (non-blocking for health checks)
