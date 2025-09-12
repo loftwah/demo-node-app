@@ -12,6 +12,7 @@ const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 const S3_BUCKET = process.env.S3_BUCKET || '';
 const SELF_TEST_ON_BOOT = (process.env.SELF_TEST_ON_BOOT || 'true').toLowerCase() === 'true';
+const APP_AUTH_SECRET = process.env.APP_AUTH_SECRET || 'hunter2';
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 const CURRENT_LOG_LEVEL = LOG_LEVEL.toLowerCase() as LogLevel;
@@ -32,23 +33,45 @@ function logError(...args: any[]) {
   if (shouldLog('error')) console.error(...args);
 }
 
-// Simple fun auth fallback: if Authorization missing or invalid, default to Loftwah/hunter2
-function authMiddleware(req: Request, _res: Response, next: NextFunction) {
-  const auth = req.headers['authorization'] || (req.query.token as string | undefined);
-  if (!auth) {
-    (req as any).user = { username: 'loftwah' };
-    return next();
+function isPublicPath(req: Request): boolean {
+  return req.path === '/healthz';
+}
+
+function authMiddleware(req: Request, res: Response, next: NextFunction) {
+  if (isPublicPath(req)) return next();
+
+  const headerVal = req.headers['authorization'];
+  const queryToken = (req.query.token as string | undefined) || undefined;
+  const authHeader = Array.isArray(headerVal) ? headerVal[0] : headerVal;
+
+  let authorized = false;
+  let username: string | undefined;
+
+  if (queryToken && queryToken === APP_AUTH_SECRET) {
+    authorized = true;
   }
-  try {
-    const token = Array.isArray(auth) ? auth[0] : auth;
-    if (token === 'Bearer demo' || token === 'loftwah:hunter2') {
-      (req as any).user = { username: 'loftwah' };
-    } else {
-      (req as any).user = { username: 'anonymous' };
+
+  if (!authorized && authHeader) {
+    if (authHeader.startsWith('Bearer ')) {
+      const bearer = authHeader.slice(7).trim();
+      if (bearer === APP_AUTH_SECRET) authorized = true;
+    } else if (authHeader.includes(':')) {
+      const idx = authHeader.lastIndexOf(':');
+      const maybeUser = authHeader.slice(0, idx);
+      const secret = authHeader.slice(idx + 1);
+      if (secret === APP_AUTH_SECRET) {
+        authorized = true;
+        username = maybeUser || 'loftwah';
+      }
     }
-  } catch {
-    (req as any).user = { username: 'loftwah' };
   }
+
+  if (!authorized) {
+    logWarn(`[auth] unauthorized ${req.method} ${req.originalUrl}`);
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+
+  (req as any).user = { username: username || 'loftwah' };
   next();
 }
 
