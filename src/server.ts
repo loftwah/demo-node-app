@@ -14,7 +14,7 @@ const S3_BUCKET = process.env.S3_BUCKET || '';
 const SELF_TEST_ON_BOOT = (process.env.SELF_TEST_ON_BOOT || 'true').toLowerCase() === 'true';
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
-const CURRENT_LOG_LEVEL = (LOG_LEVEL.toLowerCase() as LogLevel);
+const CURRENT_LOG_LEVEL = LOG_LEVEL.toLowerCase() as LogLevel;
 const LOG_LEVEL_WEIGHT: Record<LogLevel, number> = { debug: 10, info: 20, warn: 30, error: 40 };
 function shouldLog(level: LogLevel): boolean {
   return LOG_LEVEL_WEIGHT[level] >= LOG_LEVEL_WEIGHT[CURRENT_LOG_LEVEL];
@@ -77,7 +77,9 @@ app.get('/readyz', async (_req: Request, res: Response) => {
   const redisOk = await checkRedis();
   const status = dbOk && (!S3_BUCKET || s3Ok) && redisOk ? 'ready' : 'degraded';
   const durationMs = Date.now() - started;
-  logInfo(`[readyz] status=${status} s3=${s3Ok} db=${dbOk} redis=${redisOk} durationMs=${durationMs}`);
+  logInfo(
+    `[readyz] status=${status} s3=${s3Ok} db=${dbOk} redis=${redisOk} durationMs=${durationMs}`
+  );
   res.json({
     status,
     version: '0.1.0',
