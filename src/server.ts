@@ -34,7 +34,9 @@ function logError(...args: any[]) {
 }
 
 function isPublicPath(req: Request): boolean {
-  return req.path === '/healthz';
+  if (req.path === '/healthz') return true;
+  if (req.method === 'GET' && req.path === '/') return true;
+  return false;
 }
 
 function authMiddleware(req: Request, res: Response, next: NextFunction) {
@@ -89,21 +91,23 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // Root overview page
 app.get('/', (_req: Request, res: Response) => {
   const overview = [
-    "Loftwah's DevOps Refresher",
+    "Loftwah's DevOps Refresher — Demo Node App",
     '',
     'Service: demo-node-app (Express + TypeScript)',
     `Environment: ${APP_ENV}`,
     `Log level: ${LOG_LEVEL}`,
     `Port: ${PORT}`,
     '',
-    'AWS runtime: ECS Fargate',
-    'Backends:',
+    'Running on AWS ECS Fargate with:',
     `- S3 bucket: ${S3_BUCKET || '(not configured)'}`,
-    '- RDS Postgres: used for CRUD at /db/*',
-    '- ElastiCache Redis: used for /cache/*',
+    '- RDS Postgres (RDS) for data storage',
+    '- ElastiCache Redis for cache/kv',
     '',
-    'Endpoints:',
-    '- GET  /healthz    liveness (always 200 if process is up)',
+    'Public endpoints (no auth required):',
+    '- GET  /           this overview',
+    '- GET  /healthz    liveness (200 when the process is up)',
+    '',
+    'Protected endpoints (auth required):',
     '- GET  /readyz     readiness (checks S3/DB/Redis)',
     '- GET  /selftest   end-to-end CRUD across services',
     '- POST/GET/DELETE /s3/:id',
@@ -111,9 +115,13 @@ app.get('/', (_req: Request, res: Response) => {
     '- GET/PUT/DELETE  /db/items/:id',
     '- POST/GET/PUT/DELETE /cache/:key',
     '',
-    'Notes:',
+    'How to authenticate:',
+    '- Send Authorization: Bearer <APP_AUTH_SECRET>',
+    '- Or append ?token=<APP_AUTH_SECRET> to the URL',
+    '',
+    'Operational notes:',
     '- Container health check targets /healthz',
-    '- Set LOG_LEVEL=debug for per-request timing logs',
+    '- Set LOG_LEVEL=debug to enable per-request timing logs',
   ].join('\n');
 
   logInfo(`[root] overview served env=${APP_ENV}`);
