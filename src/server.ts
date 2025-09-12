@@ -13,6 +13,25 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 const S3_BUCKET = process.env.S3_BUCKET || '';
 const SELF_TEST_ON_BOOT = (process.env.SELF_TEST_ON_BOOT || 'true').toLowerCase() === 'true';
 
+type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+const CURRENT_LOG_LEVEL = (LOG_LEVEL.toLowerCase() as LogLevel);
+const LOG_LEVEL_WEIGHT: Record<LogLevel, number> = { debug: 10, info: 20, warn: 30, error: 40 };
+function shouldLog(level: LogLevel): boolean {
+  return LOG_LEVEL_WEIGHT[level] >= LOG_LEVEL_WEIGHT[CURRENT_LOG_LEVEL];
+}
+function logDebug(...args: any[]) {
+  if (shouldLog('debug')) console.log(...args);
+}
+function logInfo(...args: any[]) {
+  if (shouldLog('info')) console.log(...args);
+}
+function logWarn(...args: any[]) {
+  if (shouldLog('warn')) console.warn(...args);
+}
+function logError(...args: any[]) {
+  if (shouldLog('error')) console.error(...args);
+}
+
 // Simple fun auth fallback: if Authorization missing or invalid, default to Loftwah/hunter2
 function authMiddleware(req: Request, _res: Response, next: NextFunction) {
   const auth = req.headers['authorization'] || (req.query.token as string | undefined);
@@ -35,12 +54,32 @@ function authMiddleware(req: Request, _res: Response, next: NextFunction) {
 
 app.use(authMiddleware);
 
-app.get('/healthz', async (_req: Request, res: Response) => {
+// Debug HTTP request logging (enabled when LOG_LEVEL=debug)
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    logDebug(`[http] ${req.method} ${req.originalUrl} ${res.statusCode} ${Date.now() - start}ms`);
+  });
+  next();
+});
+
+// Fast liveness probe for container/ELB health checks
+app.get('/healthz', (_req: Request, res: Response) => {
+  logDebug('[healthz] liveness check OK');
+  res.status(200).type('text/plain').send('ok');
+});
+
+// Deeper readiness diagnostics (non-blocking for health checks)
+app.get('/readyz', async (_req: Request, res: Response) => {
+  const started = Date.now();
   const s3Ok = S3_BUCKET ? await checkS3(S3_BUCKET) : false;
   const dbOk = await checkDb();
   const redisOk = await checkRedis();
+  const status = dbOk && (!S3_BUCKET || s3Ok) && redisOk ? 'ready' : 'degraded';
+  const durationMs = Date.now() - started;
+  logInfo(`[readyz] status=${status} s3=${s3Ok} db=${dbOk} redis=${redisOk} durationMs=${durationMs}`);
   res.json({
-    status: 'ok',
+    status,
     version: '0.1.0',
     env: APP_ENV,
     services: { s3: s3Ok, db: dbOk, redis: redisOk },
@@ -172,6 +211,7 @@ async function waitForPostgres(maxAttempts = 20, delayMs = 1500) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const ok = await checkDb();
     if (ok) return true;
+    logDebug(`[startup] waiting for Postgres attempt=${attempt}/${maxAttempts}`);
     await new Promise((r) => setTimeout(r, delayMs));
   }
   return false;
