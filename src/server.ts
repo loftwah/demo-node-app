@@ -63,6 +63,40 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+// Root overview page
+app.get('/', (_req: Request, res: Response) => {
+  const overview = [
+    "Loftwah's DevOps Refresher",
+    '',
+    'Service: demo-node-app (Express + TypeScript)',
+    `Environment: ${APP_ENV}`,
+    `Log level: ${LOG_LEVEL}`,
+    `Port: ${PORT}`,
+    '',
+    'AWS runtime: ECS Fargate',
+    'Backends:',
+    `- S3 bucket: ${S3_BUCKET || '(not configured)'}`,
+    '- RDS Postgres: used for CRUD at /db/*',
+    '- ElastiCache Redis: used for /cache/*',
+    '',
+    'Endpoints:',
+    '- GET  /healthz    liveness (always 200 if process is up)',
+    '- GET  /readyz     readiness (checks S3/DB/Redis)',
+    '- GET  /selftest   end-to-end CRUD across services',
+    '- POST/GET/DELETE /s3/:id',
+    '- POST/GET        /db/items',
+    '- GET/PUT/DELETE  /db/items/:id',
+    '- POST/GET/PUT/DELETE /cache/:key',
+    '',
+    'Notes:',
+    '- Container health check targets /healthz',
+    '- Set LOG_LEVEL=debug for per-request timing logs',
+  ].join('\n');
+
+  logInfo(`[root] overview served env=${APP_ENV}`);
+  res.type('text/plain').send(overview);
+});
+
 // Fast liveness probe for container/ELB health checks
 app.get('/healthz', (_req: Request, res: Response) => {
   logDebug('[healthz] liveness check OK');
