@@ -6,6 +6,8 @@ import { randomUUID } from 'crypto';
 
 const app = express();
 app.use(express.json());
+// Serve static assets from public/ (robots.txt, favicon.ico, etc.)
+app.use(express.static('public'));
 
 const APP_ENV = process.env.APP_ENV || 'staging';
 const LOG_LEVEL = process.env.LOG_LEVEL || 'info';

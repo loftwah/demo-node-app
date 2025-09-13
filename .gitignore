@@ -31,3 +31,4 @@ logs/
 *.log
 **/*.log
 
+repomix-output.xml
