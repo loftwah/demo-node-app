@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
+import fs from 'fs';
 import { checkS3, deleteS3Object, getS3Text, putS3Text } from './lib/aws';
 import { checkDb, migrate, listItems, getItem, createItem, updateItem, deleteItem } from './lib/db';
 import { checkRedis, redis } from './lib/redis';
@@ -16,6 +17,47 @@ const S3_BUCKET = process.env.S3_BUCKET || '';
 const SELF_TEST_ON_BOOT = (process.env.SELF_TEST_ON_BOOT || 'true').toLowerCase() === 'true';
 const APP_AUTH_SECRET = process.env.APP_AUTH_SECRET || 'hunter2';
 const READYZ_PUBLIC = (process.env.READYZ_PUBLIC || 'false').toLowerCase() === 'true';
+const PLATFORM_OVERRIDE = (
+  process.env.DEPLOY_PLATFORM ||
+  process.env.RUN_PLATFORM ||
+  process.env.PLATFORM ||
+  ''
+).toLowerCase();
+
+type RuntimePlatform = 'ecs' | 'eks' | 'kubernetes' | 'unknown';
+
+function detectRuntimePlatform(): RuntimePlatform {
+  // Explicit override takes precedence
+  if (
+    PLATFORM_OVERRIDE === 'ecs' ||
+    PLATFORM_OVERRIDE === 'eks' ||
+    PLATFORM_OVERRIDE === 'kubernetes'
+  ) {
+    return PLATFORM_OVERRIDE as RuntimePlatform;
+  }
+
+  // Kubernetes/EKS detection: well-known env and service account mount
+  if (
+    process.env.KUBERNETES_SERVICE_HOST ||
+    fs.existsSync('/var/run/secrets/kubernetes.io/serviceaccount/namespace')
+  ) {
+    return 'eks';
+  }
+
+  // ECS detection: metadata URI or execution env
+  if (
+    process.env.ECS_CONTAINER_METADATA_URI_V4 ||
+    process.env.ECS_CONTAINER_METADATA_URI ||
+    (process.env.AWS_EXECUTION_ENV || '').toUpperCase().includes('ECS')
+  ) {
+    return 'ecs';
+  }
+
+  // Fallback to unknown
+  return 'unknown';
+}
+
+const RUNTIME_PLATFORM: RuntimePlatform = detectRuntimePlatform();
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 const CURRENT_LOG_LEVEL = LOG_LEVEL.toLowerCase() as LogLevel;
@@ -119,7 +161,11 @@ app.get('/', (_req: Request, res: Response) => {
     `Log level: ${LOG_LEVEL}`,
     `Port: ${PORT}`,
     '',
-    'Running on AWS ECS Fargate with:',
+    RUNTIME_PLATFORM === 'ecs'
+      ? 'Running on AWS ECS Fargate with:'
+      : RUNTIME_PLATFORM === 'eks' || RUNTIME_PLATFORM === 'kubernetes'
+        ? 'Running on Kubernetes (EKS) with:'
+        : 'Running in container (platform unknown) with:',
     `- S3 bucket: ${S3_BUCKET || '(not configured)'}`,
     '- RDS Postgres (RDS) for data storage',
     '- ElastiCache Redis for cache/kv',
@@ -139,7 +185,7 @@ app.get('/', (_req: Request, res: Response) => {
     '- Set LOG_LEVEL=debug to enable per-request timing logs',
   ].join('\n');
 
-  logInfo(`[root] overview served env=${APP_ENV}`);
+  logInfo(`[root] overview served env=${APP_ENV} platform=${RUNTIME_PLATFORM}`);
   res.type('text/plain').send(overview);
 });
 
@@ -321,7 +367,9 @@ async function start() {
   }
   app.listen(PORT, () => {
     // eslint-disable-next-line no-console
-    console.log(`[demo-node-app] env=${APP_ENV} level=${LOG_LEVEL} listening on :${PORT}`);
+    console.log(
+      `[demo-node-app] env=${APP_ENV} platform=${RUNTIME_PLATFORM} level=${LOG_LEVEL} listening on :${PORT}`
+    );
   });
 
   if (SELF_TEST_ON_BOOT) {
