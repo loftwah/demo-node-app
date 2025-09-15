@@ -17,6 +17,7 @@ const S3_BUCKET = process.env.S3_BUCKET || '';
 const SELF_TEST_ON_BOOT = (process.env.SELF_TEST_ON_BOOT || 'true').toLowerCase() === 'true';
 const APP_AUTH_SECRET = process.env.APP_AUTH_SECRET || 'hunter2';
 const READYZ_PUBLIC = (process.env.READYZ_PUBLIC || 'false').toLowerCase() === 'true';
+
 const PLATFORM_OVERRIDE = (
   process.env.DEPLOY_PLATFORM ||
   process.env.RUN_PLATFORM ||
@@ -57,7 +58,8 @@ function detectRuntimePlatform(): RuntimePlatform {
   return 'unknown';
 }
 
-const RUNTIME_PLATFORM: RuntimePlatform = detectRuntimePlatform();
+// In a demo, an explicit override should always win, even if it's an unknown value
+const RUNTIME_PLATFORM: string = PLATFORM_OVERRIDE || detectRuntimePlatform();
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 const CURRENT_LOG_LEVEL = LOG_LEVEL.toLowerCase() as LogLevel;
@@ -161,11 +163,6 @@ app.get('/', (_req: Request, res: Response) => {
     `Log level: ${LOG_LEVEL}`,
     `Port: ${PORT}`,
     '',
-    RUNTIME_PLATFORM === 'ecs'
-      ? 'Running on AWS ECS Fargate with:'
-      : RUNTIME_PLATFORM === 'eks' || RUNTIME_PLATFORM === 'kubernetes'
-        ? 'Running on Kubernetes (EKS) with:'
-        : 'Running in container (platform unknown) with:',
     `- S3 bucket: ${S3_BUCKET || '(not configured)'}`,
     '- RDS Postgres (RDS) for data storage',
     '- ElastiCache Redis for cache/kv',
@@ -185,7 +182,10 @@ app.get('/', (_req: Request, res: Response) => {
     '- Set LOG_LEVEL=debug to enable per-request timing logs',
   ].join('\n');
 
-  logInfo(`[root] overview served env=${APP_ENV} platform=${RUNTIME_PLATFORM}`);
+  logInfo(
+    `[root] overview served env=${APP_ENV} platform=${RUNTIME_PLATFORM} override=${PLATFORM_OVERRIDE || '(none)'} ` +
+      `signals{k8s=${Boolean(process.env.KUBERNETES_SERVICE_HOST)},ecs_meta=${Boolean(process.env.ECS_CONTAINER_METADATA_URI_V4 || process.env.ECS_CONTAINER_METADATA_URI)},exec_env=${process.env.AWS_EXECUTION_ENV || '(unset)'}}`
+  );
   res.type('text/plain').send(overview);
 });
 
@@ -368,7 +368,8 @@ async function start() {
   app.listen(PORT, () => {
     // eslint-disable-next-line no-console
     console.log(
-      `[demo-node-app] env=${APP_ENV} platform=${RUNTIME_PLATFORM} level=${LOG_LEVEL} listening on :${PORT}`
+      `[demo-node-app] env=${APP_ENV} platform=${RUNTIME_PLATFORM} override=${PLATFORM_OVERRIDE || '(none)'} ` +
+        `level=${LOG_LEVEL} listening on :${PORT} signals{k8s=${Boolean(process.env.KUBERNETES_SERVICE_HOST)},ecs_meta=${Boolean(process.env.ECS_CONTAINER_METADATA_URI_V4 || process.env.ECS_CONTAINER_METADATA_URI)},exec_env=${process.env.AWS_EXECUTION_ENV || '(unset)'}}`
     );
   });
 
