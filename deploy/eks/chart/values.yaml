@@ -1,7 +1,7 @@
 image:
   repository: '139294524816.dkr.ecr.ap-southeast-2.amazonaws.com/demo-node-app'
   tag: 'staging'
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 service:
   type: ClusterIP
@@ -15,6 +15,7 @@ ingress:
 env:
   APP_ENV: staging
   LOG_LEVEL: info
+  DEPLOY_PLATFORM: eks
   PORT: '3000'
   S3_BUCKET: devops-refresher-staging-app-65d854
   DB_HOST: staging-app-postgres.c4msfqd2cnyb.ap-southeast-2.rds.amazonaws.com

@@ -24,6 +24,8 @@ spec:
               value: "{{ .Values.env.APP_ENV }}"
             - name: LOG_LEVEL
               value: "{{ .Values.env.LOG_LEVEL }}"
+            - name: DEPLOY_PLATFORM
+              value: "{{ .Values.env.DEPLOY_PLATFORM }}"
             - name: PORT
               value: "{{ .Values.env.PORT }}"
             - name: S3_BUCKET
