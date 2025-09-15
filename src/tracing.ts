@@ -7,13 +7,27 @@ import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 
+function parseOtlpHeadersFromEnv(envValue?: string): Partial<Record<string, unknown>> | undefined {
+  if (!envValue) return undefined;
+  const headers: Record<string, string> = {};
+  for (const pair of envValue.split(',')) {
+    if (!pair) continue;
+    const [rawKey, ...rest] = pair.split('=');
+    const key = rawKey?.trim();
+    const value = rest.join('=');
+    if (!key) continue;
+    headers[key] = value?.trim();
+  }
+  return headers;
+}
+
 const serviceName = process.env.OTEL_SERVICE_NAME || 'demo-node-app';
 const otlpEndpoint =
   process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://otel-collector.observability:4318';
 
 const traceExporter = new OTLPTraceExporter({
   url: `${otlpEndpoint}/v1/traces`,
-  headers: process.env.OTEL_EXPORTER_OTLP_HEADERS,
+  headers: parseOtlpHeadersFromEnv(process.env.OTEL_EXPORTER_OTLP_HEADERS),
 });
 
 const sdk = new NodeSDK({
@@ -32,10 +46,7 @@ const sdk = new NodeSDK({
   }),
 });
 
-sdk.start().catch((err) => {
-  // eslint-disable-next-line no-console
-  console.error('OTel SDK start error', err);
-});
+sdk.start();
 
 process.on('SIGTERM', async () => {
   try {
