@@ -130,6 +130,22 @@ helm upgrade --install demo-node-app deploy/eks/chart \
 - `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASS`
 - `SELF_TEST_ON_BOOT` (default `true`)
 
+### OpenTelemetry Tracing
+
+This app includes basic OpenTelemetry auto-instrumentation for HTTP/Express, Postgres (`pg`), and Redis (`ioredis`). Configure these env vars to export traces:
+
+- `OTEL_SERVICE_NAME` (default `demo-node-app`)
+- `OTEL_EXPORTER_OTLP_ENDPOINT` (default `http://otel-collector.observability:4318`)
+- Optional: `OTEL_EXPORTER_OTLP_HEADERS` (e.g., `Authorization=Bearer <token>`)
+
+Kubernetes with the included Collector:
+
+```
+kubectl apply -f aws-labs/kubernetes/manifests/otel-collector-gateway.yml
+```
+
+Ensure your Deployment or container env sets `OTEL_EXPORTER_OTLP_ENDPOINT` to the Collector service (above default works when running in-cluster).
+
 ### Domains
 
 - ECS: `demo-node-app-ecs.aws.deanlofts.xyz`

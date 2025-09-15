@@ -7,9 +7,9 @@ metadata:
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
 spec:
-  ingressClassName: {{ .Values.ingress.className }}
+  ingressClassName: { { .Values.ingress.className } }
   rules:
-    - host: {{ .Values.ingress.host }}
+    - host: { { .Values.ingress.host } }
       http:
         paths:
           - path: /
@@ -18,6 +18,4 @@ spec:
               service:
                 name: demo-node-app
                 port:
-                  number: {{ .Values.service.port }}
-
-
+                  number: { { .Values.service.port } }

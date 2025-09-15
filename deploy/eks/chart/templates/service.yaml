@@ -3,12 +3,10 @@ kind: Service
 metadata:
   name: demo-node-app
 spec:
-  type: {{ .Values.service.type }}
+  type: { { .Values.service.type } }
   selector:
     app: demo-node-app
   ports:
     - name: http
-      port: {{ .Values.service.port }}
+      port: { { .Values.service.port } }
       targetPort: 3000
-
-

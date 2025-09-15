@@ -1,3 +1,4 @@
+import './tracing';
 import express, { Request, Response, NextFunction } from 'express';
 import fs from 'fs';
 import { checkS3, deleteS3Object, getS3Text, putS3Text } from './lib/aws';

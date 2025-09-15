@@ -2,10 +2,10 @@ version: 0.2
 
 env:
   variables:
-    IMAGE_REPO_NAME: "demo-node-app"
-    APP_ENV: "staging"
+    IMAGE_REPO_NAME: 'demo-node-app'
+    APP_ENV: 'staging'
   parameter-store:
-    AWS_ACCOUNT_ID: "/account/id"
+    AWS_ACCOUNT_ID: '/account/id'
 
 phases:
   install:
@@ -41,5 +41,3 @@ phases:
 artifacts:
   files:
     - imagedefinitions.json
-
-
