@@ -8,8 +8,8 @@ AWS_REGION="ap-southeast-2"
 
 # Image coordinates
 IMAGE_NAME="demo-node-app"
-# Default tag to git SHA if available, otherwise 'latest'; allow override via env
-IMAGE_TAG="${IMAGE_TAG:-$(git rev-parse --short HEAD 2>/dev/null || echo latest)}"
+# Default tag to git SHA if available; fall back to local-only tag to avoid pushing mutable aliases
+IMAGE_TAG="${IMAGE_TAG:-$(git rev-parse --short HEAD 2>/dev/null || echo dev-local)}"
 ENV_TAG="${ENV_TAG:-staging}"
 
 # Resolve account id
@@ -55,5 +55,4 @@ docker push "$REPOSITORY_URI:$ENV_TAG"
 
 echo "Pushed: $REPOSITORY_URI:$IMAGE_TAG"
 echo "Pushed: $REPOSITORY_URI:$ENV_TAG"
-
 
